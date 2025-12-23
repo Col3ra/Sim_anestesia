@@ -4,292 +4,312 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Monitor Hemodinámico Web</title>
-  <style>
-    :root{
-      --bg:#0b0d10;
-      --tile:#2a2c2f;
-      --tile2:#1c1e21;
-      --bevelHi:rgba(255,255,255,.18);
-      --bevelLo:rgba(0,0,0,.7);
-      --text:#e9eef5;
-      --muted:#aab4c2;
-      --accent:#55b7ff;
-      --danger:#ff3b30;
-      --warn:#ffd60a;
-      --ok:#34c759;
-      --shadow: rgba(0,0,0,.6);
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      background: radial-gradient(1200px 800px at 50% -200px, #24303b 0%, var(--bg) 60%),
-                  radial-gradient(900px 600px at 80% 120%, #101723 0%, var(--bg) 55%);
-      color:var(--text);
-      height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-    .monitor{
-      width:min(980px, 96vw);
-      aspect-ratio: 1.32/1;
-      background: linear-gradient(180deg, #0f1217, #07080a);
-      border-radius: 14px;
-      border: 2px solid rgba(255,255,255,.08);
-      box-shadow:
-        0 18px 55px rgba(0,0,0,.65),
-        inset 0 1px 0 rgba(255,255,255,.08);
-      overflow:hidden;
-      display:flex;
-      flex-direction:column;
-    }
+<style>
+  :root{
+    --bg:#0b0d10;
+    --tile:#2a2c2f;
+    --tile2:#1c1e21;
+    --bevelHi:rgba(255,255,255,.18);
+    --bevelLo:rgba(0,0,0,.7);
+    --text:#e9eef5;
+    --muted:#aab4c2;
+    --accent:#55b7ff;
+    --danger:#ff3b30;
+    --warn:#ffd60a;
+    --ok:#34c759;
+    --shadow: rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    background: radial-gradient(1200px 800px at 50% -200px, #24303b 0%, var(--bg) 60%),
+                radial-gradient(900px 600px at 80% 120%, #101723 0%, var(--bg) 55%);
+    color:var(--text);
 
-    .topbar{
-      height:46px;
-      display:flex;
-      align-items:center;
-      padding:0 12px;
-      gap:12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.35));
-      border-bottom:1px solid rgba(255,255,255,.06);
-      flex:0 0 auto;
-    }
-    .brand{
-      font-weight:700;
-      letter-spacing:.2px;
-      opacity:.95;
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-    .pill{
-      font-size:12px;
-      padding:4px 10px;
-      border-radius:999px;
-      background: rgba(255,255,255,.07);
-      border:1px solid rgba(255,255,255,.08);
-      color:var(--muted);
-    }
-    .spacer{flex:1}
-    .select, .btn{
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.10);
-      color: var(--text);
-      border-radius: 10px;
-      height:30px;
-      padding:0 10px;
-      font-size:12px;
-      outline:none;
-    }
-    .btn{
-      cursor:pointer;
-      transition: transform .06s ease, background .2s ease;
-    }
-    .btn:active{ transform: translateY(1px); }
-    .btn.primary{ border-color: rgba(85,183,255,.35); box-shadow: inset 0 0 0 1px rgba(85,183,255,.15); }
-    .btn.danger{ border-color: rgba(255,59,48,.35); box-shadow: inset 0 0 0 1px rgba(255,59,48,.12); }
+    /* ✅ iOS/iPad: usar dvh + permitir scroll si hiciera falta */
+    min-height: 100dvh;
+    overflow:auto;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:12px 0;
+  }
 
-    .grid{
-      flex:1 1 auto;
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr 1fr;
-      gap:10px;
-      padding:10px;
-      min-height: 0;
-    }
-    .tile{
-      position:relative;
-      border-radius: 12px;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.08), rgba(0,0,0,.35)),
-        linear-gradient(180deg, var(--tile), var(--tile2));
-      border:1px solid rgba(255,255,255,.10);
-      box-shadow:
-        inset 0 1px 0 var(--bevelHi),
-        inset 0 -2px 10px rgba(0,0,0,.55),
-        0 10px 24px rgba(0,0,0,.45);
-      overflow:hidden;
-    }
-    .tile::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      background: radial-gradient(700px 240px at 50% 0%, rgba(255,255,255,.09), transparent 60%);
-      pointer-events:none;
-      z-index:0;
-    }
+  /* ✅ En iPad: evitar que el monitor "quede más alto que la pantalla" */
+  .monitor{
+    width:min(980px, 96vw);
+    height:min(740px, calc(100dvh - 24px));
+    background: linear-gradient(180deg, #0f1217, #07080a);
+    border-radius: 14px;
+    border: 2px solid rgba(255,255,255,.08);
+    box-shadow:
+      0 18px 55px rgba(0,0,0,.65),
+      inset 0 1px 0 rgba(255,255,255,.08);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
 
-    /* Canvas detrás */
-    .dialWrap{
-      position:absolute;
-      inset:10px 10px 10px 10px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      z-index:1;
-    }
-    canvas.gauge{
-      width:100%;
-      height:100%;
-      max-width: 420px;
-      max-height: 260px;
-      display:block;
-    }
+  .topbar{
+    height:46px;
+    display:flex;
+    align-items:center;
+    padding:0 12px;
+    gap:12px;
+    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.35));
+    border-bottom:1px solid rgba(255,255,255,.06);
+    flex:0 0 auto;
+  }
+  .brand{
+    font-weight:700;
+    letter-spacing:.2px;
+    opacity:.95;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .pill{
+    font-size:12px;
+    padding:4px 10px;
+    border-radius:999px;
+    background: rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.08);
+    color:var(--muted);
+  }
+  .spacer{flex:1}
+  .select, .btn{
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.10);
+    color: var(--text);
+    border-radius: 10px;
+    height:30px;
+    padding:0 10px;
+    font-size:12px;
+    outline:none;
+  }
+  .btn{
+    cursor:pointer;
+    transition: transform .06s ease, background .2s ease;
+  }
+  .btn:active{ transform: translateY(1px); }
+  .btn.primary{ border-color: rgba(85,183,255,.35); box-shadow: inset 0 0 0 1px rgba(85,183,255,.15); }
+  .btn.danger{ border-color: rgba(255,59,48,.35); box-shadow: inset 0 0 0 1px rgba(255,59,48,.12); }
 
-    /* Textos por encima del canvas (fix #1) */
-    .label, .unit, .value, .trend, .badge{
-      position:absolute;
-      z-index:3;
-      text-shadow: 0 2px 10px rgba(0,0,0,.75);
-      user-select:none;
-      pointer-events:none;
-    }
+  .grid{
+    flex:1 1 auto;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap:10px;
+    padding:10px;
+    min-height: 0;
+  }
+  .tile{
+    position:relative;
+    border-radius: 12px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.08), rgba(0,0,0,.35)),
+      linear-gradient(180deg, var(--tile), var(--tile2));
+    border:1px solid rgba(255,255,255,.10);
+    box-shadow:
+      inset 0 1px 0 var(--bevelHi),
+      inset 0 -2px 10px rgba(0,0,0,.55),
+      0 10px 24px rgba(0,0,0,.45);
+    overflow:hidden;
+  }
+  .tile::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background: radial-gradient(700px 240px at 50% 0%, rgba(255,255,255,.09), transparent 60%);
+    pointer-events:none;
+    z-index:0;
+  }
+  .dialWrap{
+    position:absolute;
+    inset:10px 10px 10px 10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:1;
+  }
+  canvas.gauge{
+    width:100%;
+    height:100%;
+    max-width: 420px;
+    max-height: 260px;
+    display:block;
+  }
 
-    .label{
-      left:0; right:0;
-      bottom:16px;
-      text-align:center;
-      font-size:22px;
-      font-weight:800;
-      letter-spacing:.8px;
-    }
-    .unit{
-      left:12px;
-      bottom:14px;
-      font-size:12px;
-      color:var(--muted);
-      opacity:.9;
-    }
-    .value{
-      left:0; right:0;
-      top:50%;
-      transform: translateY(-56px); /* un poco más arriba para no rozar el hub */
-      text-align:center;
-      font-size:44px;
-      font-weight:900;
-      letter-spacing:.2px;
-    }
-    .trend{
-      left:0; right:0;
-      top:50%;
-      transform: translateY(-2px);
-      text-align:center;
-      font-size:13px;
-      color:var(--muted);
-    }
-    .badge{
-      right:10px;
-      top:10px;
-      font-size:11px;
-      padding:4px 8px;
-      border-radius:999px;
-      background: rgba(255,255,255,.07);
-      border:1px solid rgba(255,255,255,.09);
-      color: var(--muted);
-    }
+  .label, .unit, .value, .trend, .badge{
+    position:absolute;
+    z-index:3;
+    text-shadow: 0 2px 10px rgba(0,0,0,.75);
+    user-select:none;
+    pointer-events:none;
+  }
 
-    .bottombar{
-      height:42px;
-      display:flex;
-      align-items:center;
-      padding:0 10px;
-      gap:10px;
-      background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(255,255,255,.03));
-      border-top:1px solid rgba(255,255,255,.06);
-      flex:0 0 auto;
-    }
-    .status{
-      font-size:12px;
-      color:var(--muted);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      max-width: 44vw;
-    }
-    .bar{
-      flex:1;
-      height:10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.08);
-      overflow:hidden;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
-    }
-    .bar > div{
-      height:100%;
-      width:35%;
-      background: linear-gradient(90deg, rgba(85,183,255,.15), rgba(85,183,255,.65), rgba(85,183,255,.15));
-      animation: sweep 2.2s linear infinite;
-    }
-    @keyframes sweep{
-      0%{ transform: translateX(-40%); }
-      100%{ transform: translateX(320%); }
-    }
-    .alarm{
-      font-weight:800;
-      letter-spacing:.3px;
-      padding:6px 10px;
-      border-radius:10px;
-      border:1px solid rgba(255,255,255,.1);
-      background: rgba(255,255,255,.06);
-    }
-    .alarm.ok{ color: var(--ok); border-color: rgba(52,199,89,.25); }
-    .alarm.warn{ color: var(--warn); border-color: rgba(255,214,10,.25); }
-    .alarm.danger{ color: var(--danger); border-color: rgba(255,59,48,.25); }
+  .label{
+    left:0; right:0;
+    bottom:16px;
+    text-align:center;
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:.8px;
+  }
+  .unit{
+    left:12px;
+    bottom:14px;
+    font-size:12px;
+    color:var(--muted);
+    opacity:.9;
+  }
+  .value{
+    left:0; right:0;
+    top:50%;
+    transform: translateY(-56px);
+    text-align:center;
+    font-size:44px;
+    font-weight:900;
+    letter-spacing:.2px;
+  }
 
-    /* Footer de intervenciones (fix #3) */
-    .footer{
-      height:92px;
-      flex:0 0 auto;
-      border-top:1px solid rgba(255,255,255,.06);
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.35));
-      display:flex;
-      gap:10px;
-      padding:10px;
-      align-items:stretch;
-    }
-    .footer .block{
-      flex:1;
-      border-radius:12px;
-      background: rgba(10,12,16,.55);
-      border:1px solid rgba(255,255,255,.10);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
-      padding:10px;
-      min-width: 0;
-    }
-    .footer h3{
-      margin:0 0 8px 0;
-      font-size:12px;
-      color:var(--muted);
-      font-weight:800;
-      letter-spacing:.35px;
-      text-transform:uppercase;
-    }
-    .controls{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-    }
-    .controls .btn{
-      height:34px;
-      border-radius: 10px;
-      font-size:12px;
-      padding:0 10px;
-      white-space:nowrap;
-    }
-    .debug{
-      font-size:11px;
-      color:var(--muted);
-      line-height:1.25;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      display:-webkit-box;
-      -webkit-line-clamp:3;
-      -webkit-box-orient:vertical;
-    }
-  </style>
+  /* ✅ FIX: bajar el porcentaje (trend) para que no pise el hub/aguja */
+  .trend{
+    left:0; right:0;
+    top:50%;
+    transform: translateY(14px);
+    text-align:center;
+    font-size:13px;
+    color:var(--muted);
+  }
+
+  .badge{
+    right:10px;
+    top:10px;
+    font-size:11px;
+    padding:4px 8px;
+    border-radius:999px;
+    background: rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.09);
+    color: var(--muted);
+  }
+
+  .bottombar{
+    height:42px;
+    display:flex;
+    align-items:center;
+    padding:0 10px;
+    gap:10px;
+    background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(255,255,255,.03));
+    border-top:1px solid rgba(255,255,255,.06);
+    flex:0 0 auto;
+  }
+  .status{
+    font-size:12px;
+    color:var(--muted);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width: 44vw;
+  }
+  .bar{
+    flex:1;
+    height:10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.08);
+    overflow:hidden;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
+  }
+  .bar > div{
+    height:100%;
+    width:35%;
+    background: linear-gradient(90deg, rgba(85,183,255,.15), rgba(85,183,255,.65), rgba(85,183,255,.15));
+    animation: sweep 2.2s linear infinite;
+  }
+  @keyframes sweep{
+    0%{ transform: translateX(-40%); }
+    100%{ transform: translateX(320%); }
+  }
+  .alarm{
+    font-weight:800;
+    letter-spacing:.3px;
+    padding:6px 10px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,.1);
+    background: rgba(255,255,255,.06);
+  }
+  .alarm.ok{ color: var(--ok); border-color: rgba(52,199,89,.25); }
+  .alarm.warn{ color: var(--warn); border-color: rgba(255,214,10,.25); }
+  .alarm.danger{ color: var(--danger); border-color: rgba(255,59,48,.25); }
+
+  /* ✅ Footer sin cortar: controles en 1 fila con scroll horizontal (iPad-friendly) */
+  .footer{
+    min-height:86px;
+    flex:0 0 auto;
+    border-top:1px solid rgba(255,255,255,.06);
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.35));
+    display:flex;
+    gap:10px;
+    padding:10px;
+    align-items:stretch;
+  }
+  .footer .block{
+    flex:1;
+    border-radius:12px;
+    background: rgba(10,12,16,.55);
+    border:1px solid rgba(255,255,255,.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    padding:10px;
+    min-width: 0;
+  }
+  .footer h3{
+    margin:0 0 8px 0;
+    font-size:12px;
+    color:var(--muted);
+    font-weight:800;
+    letter-spacing:.35px;
+    text-transform:uppercase;
+  }
+
+  .controls{
+    display:flex;
+    gap:8px;
+
+    /* ✅ clave: NO wrap (así no se corta), y scroll horizontal táctil */
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom:4px;
+  }
+  .controls .btn{
+    flex:0 0 auto;
+    height:34px;
+    border-radius: 10px;
+    font-size:12px;
+    padding:0 10px;
+    white-space:nowrap;
+  }
+
+  .debug{
+    font-size:11px;
+    color:var(--muted);
+    line-height:1.25;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    display:-webkit-box;
+    -webkit-line-clamp:3;
+    -webkit-box-orient:vertical;
+  }
+
+  /* Extra: si la pantalla es muy baja, apilamos bloques del footer */
+  @media (max-height: 650px){
+    .footer{ flex-direction:column; }
+  }
+</style>
 </head>
 <body>
   <div class="monitor" id="monitor">
