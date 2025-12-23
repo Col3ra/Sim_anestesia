@@ -44,6 +44,7 @@
       display:flex;
       flex-direction:column;
     }
+
     .topbar{
       height:46px;
       display:flex;
@@ -52,6 +53,7 @@
       gap:12px;
       background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.35));
       border-bottom:1px solid rgba(255,255,255,.06);
+      flex:0 0 auto;
     }
     .brand{
       font-weight:700;
@@ -89,12 +91,13 @@
     .btn.danger{ border-color: rgba(255,59,48,.35); box-shadow: inset 0 0 0 1px rgba(255,59,48,.12); }
 
     .grid{
-      flex:1;
+      flex:1 1 auto;
       display:grid;
       grid-template-columns: 1fr 1fr;
       grid-template-rows: 1fr 1fr;
       gap:10px;
       padding:10px;
+      min-height: 0;
     }
     .tile{
       position:relative;
@@ -115,32 +118,44 @@
       inset:0;
       background: radial-gradient(700px 240px at 50% 0%, rgba(255,255,255,.09), transparent 60%);
       pointer-events:none;
+      z-index:0;
     }
+
+    /* Canvas detrás */
     .dialWrap{
       position:absolute;
       inset:10px 10px 10px 10px;
       display:flex;
       align-items:center;
       justify-content:center;
+      z-index:1;
     }
     canvas.gauge{
       width:100%;
       height:100%;
       max-width: 420px;
       max-height: 260px;
+      display:block;
     }
-    .label{
+
+    /* Textos por encima del canvas (fix #1) */
+    .label, .unit, .value, .trend, .badge{
       position:absolute;
+      z-index:3;
+      text-shadow: 0 2px 10px rgba(0,0,0,.75);
+      user-select:none;
+      pointer-events:none;
+    }
+
+    .label{
       left:0; right:0;
       bottom:16px;
       text-align:center;
       font-size:22px;
       font-weight:800;
       letter-spacing:.8px;
-      text-shadow: 0 2px 8px rgba(0,0,0,.7);
     }
     .unit{
-      position:absolute;
       left:12px;
       bottom:14px;
       font-size:12px;
@@ -148,27 +163,23 @@
       opacity:.9;
     }
     .value{
-      position:absolute;
       left:0; right:0;
       top:50%;
-      transform: translateY(-42px);
+      transform: translateY(-56px); /* un poco más arriba para no rozar el hub */
       text-align:center;
       font-size:44px;
       font-weight:900;
       letter-spacing:.2px;
-      text-shadow: 0 3px 14px rgba(0,0,0,.75);
     }
     .trend{
-      position:absolute;
       left:0; right:0;
       top:50%;
-      transform: translateY(8px);
+      transform: translateY(-2px);
       text-align:center;
       font-size:13px;
       color:var(--muted);
     }
     .badge{
-      position:absolute;
       right:10px;
       top:10px;
       font-size:11px;
@@ -187,6 +198,7 @@
       gap:10px;
       background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(255,255,255,.03));
       border-top:1px solid rgba(255,255,255,.06);
+      flex:0 0 auto;
     }
     .status{
       font-size:12px;
@@ -209,7 +221,6 @@
       height:100%;
       width:35%;
       background: linear-gradient(90deg, rgba(85,183,255,.15), rgba(85,183,255,.65), rgba(85,183,255,.15));
-      filter: blur(.1px);
       animation: sweep 2.2s linear infinite;
     }
     @keyframes sweep{
@@ -228,38 +239,55 @@
     .alarm.warn{ color: var(--warn); border-color: rgba(255,214,10,.25); }
     .alarm.danger{ color: var(--danger); border-color: rgba(255,59,48,.25); }
 
-    /* Panel rápido (solo para test) */
-    .panel{
-      position:absolute;
-      right:12px;
-      bottom:56px;
-      width: 280px;
-      border-radius: 12px;
-      background: rgba(10,12,16,.78);
-      border:1px solid rgba(255,255,255,.10);
-      box-shadow: 0 14px 45px rgba(0,0,0,.55);
+    /* Footer de intervenciones (fix #3) */
+    .footer{
+      height:92px;
+      flex:0 0 auto;
+      border-top:1px solid rgba(255,255,255,.06);
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.35));
+      display:flex;
+      gap:10px;
       padding:10px;
-      backdrop-filter: blur(8px);
+      align-items:stretch;
     }
-    .panel h3{
+    .footer .block{
+      flex:1;
+      border-radius:12px;
+      background: rgba(10,12,16,.55);
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+      padding:10px;
+      min-width: 0;
+    }
+    .footer h3{
       margin:0 0 8px 0;
-      font-size:13px;
+      font-size:12px;
       color:var(--muted);
       font-weight:800;
-      letter-spacing:.3px;
+      letter-spacing:.35px;
       text-transform:uppercase;
     }
-    .row{
+    .controls{
       display:flex;
       gap:8px;
-      margin-bottom:8px;
+      flex-wrap:wrap;
     }
-    .row .btn{ flex:1; height:34px; border-radius: 10px; font-size:12px; }
-    .tiny{
+    .controls .btn{
+      height:34px;
+      border-radius: 10px;
+      font-size:12px;
+      padding:0 10px;
+      white-space:nowrap;
+    }
+    .debug{
       font-size:11px;
-      color: var(--muted);
-      opacity:.9;
-      line-height:1.3;
+      color:var(--muted);
+      line-height:1.25;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      display:-webkit-box;
+      -webkit-line-clamp:3;
+      -webkit-box-orient:vertical;
     }
   </style>
 </head>
@@ -323,26 +351,25 @@
       <div class="alarm ok" id="alarm">OK</div>
     </div>
 
-    <!-- panel solo para test -->
-    <div class="panel" id="panel">
-      <h3>Intervenciones (test)</h3>
-      <div class="row">
-        <button class="btn" id="bolus250">Bolus 250 mL</button>
-        <button class="btn" id="bolus500">Bolus 500 mL</button>
+    <!-- Footer de intervenciones -->
+    <div class="footer">
+      <div class="block">
+        <h3>Intervenciones</h3>
+        <div class="controls">
+          <button class="btn" id="bolus250">Bolus 250 mL</button>
+          <button class="btn" id="bolus500">Bolus 500 mL</button>
+          <button class="btn" id="noraUp">Nora +</button>
+          <button class="btn" id="noraDown">Nora −</button>
+          <button class="btn" id="inoUp">Inotrópico +</button>
+          <button class="btn" id="inoDown">Inotrópico −</button>
+          <button class="btn" id="tx">Transfusión</button>
+          <button class="btn" id="toggleSVV">Toggle SVV válido</button>
+        </div>
       </div>
-      <div class="row">
-        <button class="btn" id="noraUp">Nora +</button>
-        <button class="btn" id="noraDown">Nora −</button>
+      <div class="block">
+        <h3>Debug fisiológico</h3>
+        <div class="debug" id="debugTiny">—</div>
       </div>
-      <div class="row">
-        <button class="btn" id="inoUp">Inotrópico +</button>
-        <button class="btn" id="inoDown">Inotrópico −</button>
-      </div>
-      <div class="row">
-        <button class="btn" id="tx">Transfusión</button>
-        <button class="btn" id="toggleSVV">Toggle validez SVV</button>
-      </div>
-      <div class="tiny" id="debugTiny"></div>
     </div>
   </div>
 
@@ -351,21 +378,15 @@
  * CONFIG
  * ========================== */
 const CONFIG = {
-  // ✅ Pegá acá tu URL del Web App de Google Apps Script (Deploy > Web app)
-  // Ejemplo: "https://script.google.com/macros/s/AKfycbx....../exec"
-  GAS_URL: "",
-
-  // Para evitar CORS, usamos JSONP si GAS_URL está configurada
+  GAS_URL: "",           // pegá tu WebApp si querés
   USE_JSONP: true,
 
-  // Timing
-  PHYSIO_HZ: 1,        // cálculo fisiológico 1 Hz
-  RENDER_FPS: 60,      // animación
-  TREND_WINDOW_SEC: 300, // 5 min
+  PHYSIO_HZ: 1,          // 1 Hz fisiología (cuando está en Play)
+  RENDER_FPS: 60,        // render continuo (fix #2 y mejor UX)
+  TREND_WINDOW_SEC: 300, // etiqueta 5 min (pero usa ventana disponible)
 
-  // Estética
-  DIAL_START: Math.PI * 0.75,   // 135°
-  DIAL_END:   Math.PI * 2.25,   // 405° (270° sweep)
+  DIAL_START: Math.PI * 0.75,
+  DIAL_END:   Math.PI * 2.25
 };
 
 const fmt = {
@@ -378,13 +399,12 @@ const fmt = {
 function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
 function lerp(a,b,t){ return a + (b-a)*t; }
 function smoothDamp(current, target, lambda, dt){
-  // expo smoothing
   const t = 1 - Math.exp(-lambda*dt);
   return current + (target-current)*t;
 }
 
 /** =========================
- * JSONP helper (para GAS cross-domain)
+ * JSONP helper
  * ========================== */
 function jsonp(url, params={}){
   return new Promise((resolve, reject)=>{
@@ -398,7 +418,7 @@ function jsonp(url, params={}){
       resolve(data);
       cleanup();
     };
-    script.onerror = (e)=>{
+    script.onerror = ()=>{
       reject(new Error("JSONP error"));
       cleanup();
     };
@@ -408,6 +428,24 @@ function jsonp(url, params={}){
     }
     document.head.appendChild(script);
   });
+}
+
+function getCss(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function colorFromKey(key){
+  const map = { danger:getCss("--danger"), warn:getCss("--warn"), ok:getCss("--ok") };
+  return map[key] || getCss("--accent");
+}
+function withAlpha(hexOrRgb, a){
+  if(hexOrRgb.startsWith("rgb")){
+    return hexOrRgb.replace("rgb(", "rgba(").replace(")", `, ${a})`);
+  }
+  const h = hexOrRgb.replace("#","");
+  const r = parseInt(h.slice(0,2),16);
+  const g = parseInt(h.slice(2,4),16);
+  const b = parseInt(h.slice(4,6),16);
+  return `rgba(${r},${g},${b},${a})`;
 }
 
 /** =========================
@@ -421,7 +459,7 @@ class Gauge {
     this.value = options.min;
     this.target = options.min;
     this.history = [];
-    this.valid = true; // para SVV
+    this.valid = true;
     this.resize();
     window.addEventListener("resize", ()=>this.resize());
   }
@@ -431,10 +469,11 @@ class Gauge {
     const rect = this.canvas.getBoundingClientRect();
     this.canvas.width = Math.max(10, Math.floor(rect.width * dpr));
     this.canvas.height = Math.max(10, Math.floor(rect.height * dpr));
-    this.ctx.setTransform(dpr,0,0,dpr,0,0); // draw in CSS px
+    this.ctx.setTransform(dpr,0,0,dpr,0,0);
   }
 
   setTarget(v){ this.target = v; }
+
   pushHistory(v){
     const now = performance.now()/1000;
     this.history.push({t: now, v});
@@ -442,37 +481,29 @@ class Gauge {
     while(this.history.length && this.history[0].t < cutoff) this.history.shift();
   }
 
-  trend5min(){
-    if(this.history.length < 4) return {dir:0, pct:0};
-    const now = performance.now()/1000;
-    const cutoff = now - CONFIG.TREND_WINDOW_SEC;
-    let first = null;
-    for(const p of this.history){
-      if(p.t >= cutoff){ first = p; break; }
-    }
-    if(!first) first = this.history[0];
-    const last = this.history[this.history.length-1];
+  // Trend siempre “vive”: usa ventana disponible si hay pocos segundos (fix #2)
+  trend(){
+    if(this.history.length < 2) return {dir:0, pct:0};
+    const first = this.history[0];
+    const last  = this.history[this.history.length-1];
     const base = Math.max(1e-6, Math.abs(first.v));
     const pct = ((last.v - first.v)/base) * 100;
-    const dir = pct > 0.5 ? 1 : (pct < -0.5 ? -1 : 0);
+    const dir = pct > 0.2 ? 1 : (pct < -0.2 ? -1 : 0);
     return {dir, pct};
   }
 
   zoneFor(v){
     const z = this.options.zones;
-    // zones: [{from,to,colorKey}] in ascending order
     for(const zone of z){
       if(v >= zone.from && v <= zone.to) return zone.colorKey;
     }
-    // fuera de rango
     return (v < this.options.min || v > this.options.max) ? "danger" : "warn";
   }
 
   valueToAngle(v){
     const {min,max} = this.options;
     const t = (clamp(v,min,max) - min) / (max - min);
-    const a = lerp(CONFIG.DIAL_START, CONFIG.DIAL_END, t);
-    return a;
+    return lerp(CONFIG.DIAL_START, CONFIG.DIAL_END, t);
   }
 
   draw(){
@@ -482,13 +513,12 @@ class Gauge {
 
     ctx.clearRect(0,0,w,h);
 
-    // layout
     const cx = w/2, cy = h/2 + 4;
     const r = Math.min(w,h) * 0.42;
     const ring = r * 0.18;
     const innerR = r - ring*1.15;
 
-    // subtle shadow
+    // shadow disc
     ctx.save();
     ctx.beginPath();
     ctx.arc(cx,cy,r*1.02,0,Math.PI*2);
@@ -522,13 +552,11 @@ class Gauge {
     // colored zones arc
     const arcR = r;
     const arcW = ring;
-    const zones = this.options.zones;
-    for(const zone of zones){
+    for(const zone of this.options.zones){
       const a1 = this.valueToAngle(zone.from);
       const a2 = this.valueToAngle(zone.to);
-      const grad = ctx.createLinearGradient(cx - arcR, cy, cx + arcR, cy);
       const c = colorFromKey(zone.colorKey);
-      // gradient-ish
+      const grad = ctx.createLinearGradient(cx - arcR, cy, cx + arcR, cy);
       grad.addColorStop(0, withAlpha(c, .65));
       grad.addColorStop(.5, withAlpha(c, .95));
       grad.addColorStop(1, withAlpha(c, .65));
@@ -538,13 +566,13 @@ class Gauge {
       ctx.strokeStyle = grad;
       ctx.lineWidth = arcW;
       ctx.lineCap = "round";
-      ctx.globalAlpha = this.valid ? 1 : 0.35; // si no es confiable (SVV)
+      ctx.globalAlpha = this.valid ? 1 : 0.35;
       ctx.arc(cx,cy,arcR, a1, a2, false);
       ctx.stroke();
       ctx.restore();
     }
 
-    // inner glossy circle
+    // inner glossy disc
     ctx.save();
     ctx.beginPath();
     ctx.arc(cx,cy,innerR,0,Math.PI*2);
@@ -563,10 +591,15 @@ class Gauge {
     ctx.stroke();
     ctx.restore();
 
-    // needle
+    // needle (fix #1): no atraviesa el centro
     const a = this.valueToAngle(this.value);
-    const nx = cx + Math.cos(a) * (r - arcW*0.6);
-    const ny = cy + Math.sin(a) * (r - arcW*0.6);
+    const needleOuter = r - arcW*0.6;
+    const needleInner = innerR*0.28; // empieza fuera del “window” del número
+
+    const x0 = cx + Math.cos(a) * needleInner;
+    const y0 = cy + Math.sin(a) * needleInner;
+    const x1 = cx + Math.cos(a) * needleOuter;
+    const y1 = cy + Math.sin(a) * needleOuter;
 
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,.7)";
@@ -574,30 +607,28 @@ class Gauge {
     ctx.lineWidth = 5;
     ctx.strokeStyle = "rgba(255,255,255,.95)";
     ctx.beginPath();
-    ctx.moveTo(cx,cy);
-    ctx.lineTo(nx,ny);
+    ctx.moveTo(x0,y0);
+    ctx.lineTo(x1,y1);
     ctx.stroke();
 
     // needle head
     ctx.shadowBlur = 0;
     ctx.fillStyle = "rgba(255,255,255,.95)";
     ctx.beginPath();
-    const headR = 7;
-    ctx.arc(nx,ny,headR,0,Math.PI*2);
+    ctx.arc(x1,y1,7,0,Math.PI*2);
     ctx.fill();
 
-    // center hub
+    // hub (más chico para no “invadir” el valor)
     ctx.beginPath();
-    ctx.arc(cx,cy,10,0,Math.PI*2);
+    ctx.arc(cx,cy,8,0,Math.PI*2);
     ctx.fillStyle = "rgba(240,240,240,.9)";
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(cx,cy,6,0,Math.PI*2);
+    ctx.arc(cx,cy,5,0,Math.PI*2);
     ctx.fillStyle = "rgba(30,30,30,.85)";
     ctx.fill();
     ctx.restore();
 
-    // sparkline
     this.drawSparkline(ctx, cx, cy, innerR);
   }
 
@@ -632,7 +663,6 @@ class Gauge {
       ctx.strokeStyle = "rgba(255,255,255,.72)";
       ctx.stroke();
     }
-
     ctx.restore();
   }
 
@@ -651,31 +681,7 @@ function roundRect(ctx, x, y, w, h, r, fill, stroke){
   ctx.arcTo(x, y, x+w, y, r);
   ctx.closePath();
   if(fill) ctx.fill();
-  if(stroke){ ctx.stroke(); }
-}
-
-function colorFromKey(key){
-  const map = {
-    danger: getCss("--danger"),
-    warn: getCss("--warn"),
-    ok: getCss("--ok")
-  };
-  return map[key] || getCss("--accent");
-}
-function getCss(name){
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-}
-function withAlpha(hexOrRgb, a){
-  // accept rgb(...) already
-  if(hexOrRgb.startsWith("rgb")){
-    return hexOrRgb.replace("rgb(", "rgba(").replace(")", `, ${a})`);
-  }
-  // hex #rrggbb
-  const h = hexOrRgb.replace("#","");
-  const r = parseInt(h.slice(0,2),16);
-  const g = parseInt(h.slice(2,4),16);
-  const b = parseInt(h.slice(4,6),16);
-  return `rgba(${r},${g},${b},${a})`;
+  if(stroke) ctx.stroke();
 }
 
 /** =========================
@@ -685,75 +691,37 @@ const LOCAL_SCENARIOS = [
   {
     id:"hipovolemia",
     nombre:"Hipovolemia (respondedor a fluidos)",
-    meta:"SVV alto, CI bajo-normal, SVRI alto, ScvO2 baja",
-    init:{ preload:0.35, contract:0.62, tone:0.70, vo2:0.55, svvValid:true, hb:10.5, sao2:98, bsa:1.85 }
+    meta:"SVV alto, CI bajo, SVRI alto, ScvO₂ baja",
+    init:{ preload:0.30, contract:0.65, tone:0.70, vo2:0.55, svvValid:true, hb:10.0, sao2:98, bsa:1.85 }
   },
   {
     id:"vasoplejia",
     nombre:"Vasoplejía (anestesia profunda / sepsis early)",
-    meta:"SVRI bajo, CI normal-alto, ScvO2 normal-alta, SVV variable",
-    init:{ preload:0.55, contract:0.70, tone:0.30, vo2:0.55, svvValid:true, hb:11.0, sao2:97, bsa:1.90 }
+    meta:"SVRI bajo, CI normal-alto, ScvO₂ normal-alta",
+    init:{ preload:0.55, contract:0.70, tone:0.28, vo2:0.55, svvValid:true, hb:11.0, sao2:97, bsa:1.90 }
   },
   {
     id:"fallo_bomba",
     nombre:"Disfunción contráctil",
-    meta:"CI bajo, SVV no tan alto, SVRI alto, ScvO2 baja",
-    init:{ preload:0.55, contract:0.35, tone:0.75, vo2:0.60, svvValid:true, hb:10.0, sao2:96, bsa:1.80 }
+    meta:"CI bajo, SVV moderado, SVRI alto, ScvO₂ baja",
+    init:{ preload:0.55, contract:0.32, tone:0.72, vo2:0.60, svvValid:true, hb:10.0, sao2:96, bsa:1.80 }
   },
   {
     id:"alto_vo2",
-    nombre:"Demanda alta (VO2 ↑)",
-    meta:"ScvO2 cae con CI variable",
-    init:{ preload:0.55, contract:0.65, tone:0.55, vo2:0.85, svvValid:true, hb:12.0, sao2:97, bsa:1.88 }
+    nombre:"Demanda alta (VO₂ ↑)",
+    meta:"ScvO₂ cae por VO₂ alto (aun con CI no tan malo)",
+    init:{ preload:0.55, contract:0.65, tone:0.55, vo2:0.90, svvValid:true, hb:12.0, sao2:97, bsa:1.88 }
+  },
+  {
+    id:"svv_no_confiable",
+    nombre:"SVV no confiable (espontáneo/arrítmico)",
+    meta:"SVV debe interpretarse como no confiable",
+    init:{ preload:0.55, contract:0.60, tone:0.55, vo2:0.60, svvValid:false, hb:11.5, sao2:97, bsa:1.86 }
   },
 ];
 
 /** =========================
- * MODELO FISIOLÓGICO (simple coherente)
- * variables normalizadas 0..1:
- * preload (precarga), contract (contractilidad), tone (tono vascular), vo2 (demanda)
- * ========================== */
-function derivePhysio(s){
-  // constantes base
-  const BSA = s.bsa ?? 1.85;
-
-  // FC base (bpm) en rango 55-120 según estrés/compensación
-  const fc = 60 + 55*(1 - s.preload) + 10*(s.vo2 - 0.5);
-  // VS base (mL) escala 35-95 según preload y contractilidad y poscarga (tone)
-  const afterloadPenalty = 0.25 + 0.85*s.tone; // 0.25..1.1
-  const vs = 35 + 75 * (0.55*s.preload + 0.55*s.contract) / afterloadPenalty; // aprox
-  // CO (L/min)
-  const co = (fc * vs) / 1000;
-
-  const ci = co / BSA;
-
-  // SVV: sube si preload bajo y si "ventilación controlada" (valid)
-  let svv = 4 + 28*(1 - s.preload) + 4*(s.tone - 0.5);
-  svv = clamp(svv, 2, 35);
-
-  // SVRI (dyn s cm^-5 m^2) depende de tono / co
-  // idea: SVRI ~ tone / CI con escala clínica
-  let svri = 900 + 2400*(s.tone) - 450*(ci - 2.5);
-  svri = clamp(svri, 500, 3200);
-
-  // DO2 relativo (simplificado): CO * Hb * SaO2
-  const hb = s.hb ?? 11;
-  const sao2 = (s.sao2 ?? 97)/100;
-  const do2Rel = co * hb * sao2;
-
-  // ScvO2 depende de DO2/VO2 (muy simplificado)
-  // vo2 0.3..1.0 => mayor demanda reduce scv
-  let scv = 78 + 10*(do2Rel - 6.0) - 28*(s.vo2 - 0.55);
-  scv = clamp(scv, 45, 90);
-
-  // MAP (mmHg) interno (solo para debug)
-  const map = clamp(55 + 55*s.tone + 4*(ci-2.5), 45, 110);
-
-  return {ci, svv, svri, scv, fc, vs, co, map};
-}
-
-/** =========================
- * RANGOS + ZONAS (tuneables)
+ * RANGOS + ZONAS
  * ========================== */
 const PARAMS = {
   ci: {
@@ -798,7 +766,7 @@ const PARAMS = {
 };
 
 /** =========================
- * APP STATE
+ * UI
  * ========================== */
 const UI = {
   scenarioSelect: document.getElementById("scenarioSelect"),
@@ -824,37 +792,96 @@ const UI = {
 };
 
 const gauges = {
-  ci: new Gauge(document.getElementById("g-ci"), { ...PARAMS.ci }),
-  svv: new Gauge(document.getElementById("g-svv"), { ...PARAMS.svv }),
-  svri: new Gauge(document.getElementById("g-svri"), { ...PARAMS.svri }),
-  scv: new Gauge(document.getElementById("g-scv"), { ...PARAMS.scv }),
+  ci: new Gauge(document.getElementById("g-ci"),   { ...PARAMS.ci }),
+  svv:new Gauge(document.getElementById("g-svv"),  { ...PARAMS.svv }),
+  svri:new Gauge(document.getElementById("g-svri"),{ ...PARAMS.svri }),
+  scv:new Gauge(document.getElementById("g-scv"),  { ...PARAMS.scv }),
 };
 
 let running = false;
 let lastRender = performance.now();
 let physioTimer = null;
 
-const patient = {
-  // variables normalizadas
-  preload: 0.55,
-  contract:0.65,
-  tone:0.55,
-  vo2:0.55,
-  hb: 11.0,
-  sao2: 97,
-  bsa: 1.85,
-  svvValid: true,
-
-  // controles (simulados)
-  nora: 0.0,    // -1..+1
-  ino: 0.0,     // -1..+1
-};
-
-let scenarios = []; // cargados local o GAS
+let scenarios = [];
 let currentScenario = null;
 
 /** =========================
- * DATA SOURCE: LOCAL o GAS
+ * MODELO (fix #4)
+ * ========================== */
+const patient = {
+  preload: 0.55,   // 0..1
+  contract:0.65,   // 0..1
+  tone:0.55,       // 0..1
+  vo2:0.55,        // 0..1 (demanda)
+  hb: 11.0,        // g/dL
+  sao2: 97,        // %
+  bsa: 1.85,       // m2
+  svvValid: true,
+
+  // “dosis” simplificadas -1..+1
+  nora: 0.0,
+  ino: 0.0,
+};
+
+function randn(){ return (Math.random()-0.5); }
+
+// Fick simplificado + hemodinámica coherente
+function derivePhysio(s){
+  const BSA = s.bsa ?? 1.85;
+  const SaO2 = clamp((s.sao2 ?? 97)/100, 0.4, 1.0);
+  const Hb = clamp(s.hb ?? 11, 5, 18);
+
+  // FC: sube con hipovolemia y con VO2 alta; baja un poco si tono alto (baroreflex simplificado)
+  let fc = 60
+    + 55*(1 - s.preload)
+    + 18*(s.vo2 - 0.55)
+    - 10*(s.tone - 0.55);
+  fc = clamp(fc, 45, 135);
+
+  // PosCarga ~ tono; Noradrenalina sube tono y puede penalizar VS si se pasa
+  const afterload = 0.55 + 1.10*s.tone; // 0.6..1.6 aprox
+
+  // SV: depende de precarga+contractilidad y cae con afterload alta
+  let sv = 25 + 95 * (0.60*s.preload + 0.55*s.contract) / afterload;
+  sv = clamp(sv, 25, 110);
+
+  // CO (L/min)
+  const co = (fc * sv) / 1000;
+  const ci = co / BSA;
+
+  // MAP: depende de tono (resistencia) y algo de CO
+  const cvp = 8; // mmHg fijo (simplificación)
+  let map = 50 + 55*s.tone + 4*(co - 5.0);
+  map = clamp(map, 45, 110);
+
+  // SVRI: fórmula indexada aproximada
+  // SVRI = (MAP - CVP) / CI * 80
+  let svri = ((map - cvp) / Math.max(0.2, ci)) * 80;
+  svri = clamp(svri, 500, 3200);
+
+  // SVV: alto con hipovolemia/precarga baja; baja con buena precarga
+  // si no es confiable, mostramos uno “decorrelacionado”
+  let svv = 6 + 32*(1 - s.preload) + 4*(afterload - 1.1);
+  svv = clamp(svv, 2, 35);
+
+  // DO2 (mL O2/min) aproximado: CO * CaO2 * 10
+  // CaO2 ≈ 1.34*Hb*SaO2 (ignoramos disuelto)
+  const CaO2 = 1.34 * Hb * SaO2; // mL O2/dL
+  const DO2 = co * CaO2 * 10;    // mL O2/min
+
+  // VO2 base y factor por "vo2" (0.4..1.0)
+  const VO2_base = 220; // adulto aprox
+  const VO2 = VO2_base * clamp(0.75 + 0.9*(s.vo2 - 0.55), 0.5, 1.5);
+
+  // ScvO2 (SvO2 central) ≈ SaO2 - VO2/(CO*Hb*1.34*10)
+  let scv = (SaO2 - (VO2 / Math.max(1e-3, (co * Hb * 1.34 * 10)))) * 100;
+  scv = clamp(scv, 45, 90);
+
+  return {ci, svv, svri, scv, fc, sv, co, map, DO2, VO2};
+}
+
+/** =========================
+ * DATA SOURCE
  * ========================== */
 async function loadScenarios(){
   if(CONFIG.GAS_URL){
@@ -864,22 +891,19 @@ async function loadScenarios(){
       const data = CONFIG.USE_JSONP
         ? await jsonp(CONFIG.GAS_URL, { action:"listScenarios" })
         : await (await fetch(CONFIG.GAS_URL + "?action=listScenarios")).json();
-
       if(!data || !data.ok) throw new Error("Respuesta inválida");
       scenarios = data.scenarios;
       UI.status.textContent = `Escenarios cargados (${scenarios.length}).`;
       return;
     }catch(e){
-      UI.status.textContent = "No pude leer Sheets. Paso a LOCAL (revisá GAS_URL / deploy / permisos).";
-      scenarios = LOCAL_SCENARIOS.map(s => ({
-        id:s.id, nombre:s.nombre, meta:s.meta, init:s.init
-      }));
+      UI.status.textContent = "No pude leer Sheets. Paso a LOCAL (revisá deploy/permisos).";
+      scenarios = LOCAL_SCENARIOS.map(s => ({ id:s.id, nombre:s.nombre, meta:s.meta, init:s.init }));
       UI.modePill.textContent = "LOCAL";
       return;
     }
   }
   UI.modePill.textContent = "LOCAL";
-  scenarios = LOCAL_SCENARIOS.map(s => ({id:s.id, nombre:s.nombre, meta:s.meta, init:s.init}));
+  scenarios = LOCAL_SCENARIOS.map(s => ({ id:s.id, nombre:s.nombre, meta:s.meta, init:s.init }));
 }
 
 function populateScenarioSelect(){
@@ -894,100 +918,102 @@ function populateScenarioSelect(){
 
 async function loadScenarioById(id){
   if(CONFIG.GAS_URL){
-    // si viene de Sheets, pedimos payload completo (por si querés rangos/sensibilidades)
     try{
       const data = CONFIG.USE_JSONP
         ? await jsonp(CONFIG.GAS_URL, { action:"getScenario", id })
         : await (await fetch(CONFIG.GAS_URL + `?action=getScenario&id=${encodeURIComponent(id)}`)).json();
-      if(data && data.ok && data.scenario){
-        return data.scenario;
-      }
+      if(data && data.ok && data.scenario) return data.scenario;
     }catch(e){}
   }
-  // fallback local
   return scenarios.find(s=>s.id===id) || scenarios[0];
 }
 
-/** =========================
- * ESCENARIO -> ESTADO PACIENTE
- * ========================== */
 function applyScenario(sc){
   currentScenario = sc;
   const init = sc.init || sc;
+
   patient.preload = init.preload ?? 0.55;
   patient.contract= init.contract ?? 0.65;
   patient.tone    = init.tone ?? 0.55;
   patient.vo2     = init.vo2 ?? 0.55;
-  patient.hb      = init.hb ?? 11.0;
-  patient.sao2    = init.sao2 ?? 97;
-  patient.bsa     = init.bsa ?? 1.85;
+  patient.hb      = init.hb ?? init.hb_g_dl ?? 11.0;
+  patient.sao2    = init.sao2 ?? init.sao2_pct ?? 97;
+  patient.bsa     = init.bsa ?? init.bsa_m2 ?? 1.85;
   patient.svvValid= init.svvValid ?? true;
+
   patient.nora = 0;
   patient.ino = 0;
 
-  // reset history
-  for(const k of Object.keys(gauges)){
-    gauges[k].history = [];
-  }
+  for(const k of Object.keys(gauges)) gauges[k].history = [];
   UI.status.textContent = sc.meta ? sc.meta : `Escenario: ${sc.nombre}`;
 }
 
 /** =========================
- * INTERVENCIONES (test)
+ * INTERVENCIONES
  * ========================== */
 function bolus(ml){
-  // aumenta preload; efecto decrece según preload actual
   const dose = ml/500; // 0.5 o 1
-  const gain = (0.20 * dose) * (1 - patient.preload*0.7);
-  patient.preload = clamp(patient.preload + gain, 0.05, 0.95);
-  UI.status.textContent = `Bolus ${ml} mL → precarga +${(gain*100).toFixed(0)}%.`;
+  const gain = (0.22 * dose) * (1 - patient.preload*0.75);
+  patient.preload = clamp(patient.preload + gain, 0.05, 0.98);
+  UI.status.textContent = `Bolus ${ml} mL → precarga ↑`;
+  physioStep(true); // aplica y actualiza aunque esté en pausa (fix #2 UX)
 }
+
 function nora(delta){
   patient.nora = clamp(patient.nora + delta, -1, 1);
-  UI.status.textContent = `Noradrenalina: ${(patient.nora*100).toFixed(0)}% (sim).`;
+  UI.status.textContent = `Noradrenalina: ${(patient.nora*100).toFixed(0)}% (sim)`;
+  physioStep(true);
 }
+
 function ino(delta){
   patient.ino = clamp(patient.ino + delta, -1, 1);
-  UI.status.textContent = `Inotrópico: ${(patient.ino*100).toFixed(0)}% (sim).`;
+  UI.status.textContent = `Inotrópico: ${(patient.ino*100).toFixed(0)}% (sim)`;
+  physioStep(true);
 }
+
 function transfusion(){
   patient.hb = clamp(patient.hb + 1.0, 6, 16);
-  UI.status.textContent = `Transfusión → Hb ${patient.hb.toFixed(1)} g/dL.`;
+  UI.status.textContent = `Transfusión → Hb ${patient.hb.toFixed(1)} g/dL`;
+  physioStep(true);
 }
+
 function toggleSVVValid(){
   patient.svvValid = !patient.svvValid;
-  UI.status.textContent = `SVV ahora: ${patient.svvValid ? "VÁLIDO" : "NO confiable"}.`;
+  UI.status.textContent = `SVV ahora: ${patient.svvValid ? "VÁLIDO" : "NO confiable"}`;
+  physioStep(true);
 }
 
 /** =========================
  * LOOP FISIOLÓGICO
  * ========================== */
-function physioStep(){
-  // aplicar drogas a variables (simple)
-  // nora: sube tono; si se pasa, aumenta poscarga y puede bajar VS/CI
-  patient.tone = clamp(patient.tone + 0.06*patient.nora, 0.05, 0.95);
-  // inotrópico: sube contractilidad
-  patient.contract = clamp(patient.contract + 0.05*patient.ino, 0.05, 0.95);
+function physioStep(fromUserAction=false){
+  // Efectos de drogas (simples pero coherentes)
+  // Nora: ↑ tone, ↑ venous return un poco; si muy alta, penaliza SV por poscarga
+  const toneTarget = clamp((currentScenario?.init?.tone ?? patient.tone) + 0.30*patient.nora, 0.05, 0.98);
+  patient.tone = smoothDamp(patient.tone, toneTarget, 0.9, 1);
 
-  // drift fisiológico suave hacia baseline del escenario (para que no se “rompa”)
-  const base = (currentScenario?.init) || {};
-  patient.preload  = smoothDamp(patient.preload,  base.preload  ?? patient.preload,  0.18, 1);
-  patient.contract = smoothDamp(patient.contract, base.contract ?? patient.contract, 0.12, 1);
-  patient.tone     = smoothDamp(patient.tone,     base.tone     ?? patient.tone,     0.10, 1);
-  patient.vo2      = smoothDamp(patient.vo2,      base.vo2      ?? patient.vo2,      0.08, 1);
+  const contractTarget = clamp((currentScenario?.init?.contract ?? patient.contract) + 0.28*patient.ino, 0.05, 0.98);
+  patient.contract = smoothDamp(patient.contract, contractTarget, 0.8, 1);
 
-  // ruido mínimo
-  const noise = ()=> (Math.random()-0.5);
+  const preloadBase = (currentScenario?.init?.preload ?? patient.preload);
+  // Nora aumenta retorno venoso levemente (venoconstricción) si está positiva
+  const preloadTarget = clamp(preloadBase + 0.08*Math.max(0, patient.nora), 0.05, 0.98);
+  patient.preload = smoothDamp(patient.preload, preloadTarget, fromUserAction ? 0.15 : 0.08, 1);
+
+  // VO2 se mantiene hacia base (podés luego meter eventos)
+  const vo2Base = (currentScenario?.init?.vo2 ?? patient.vo2);
+  patient.vo2 = smoothDamp(patient.vo2, vo2Base, 0.05, 1);
+
   const p = derivePhysio(patient);
 
-  // si SVV no es confiable (espontáneo/arrítmico), lo “desacoplamos” parcialmente
-  const svvShown = patient.svvValid ? p.svv : clamp(10 + 6*noise(), 4, 18);
+  // SVV si no confiable -> decorrelacionado
+  const svvShown = patient.svvValid ? p.svv : clamp(10 + 6*randn(), 4, 18);
 
-  // targets a gauges
-  gauges.ci.setTarget(p.ci + 0.05*noise());
-  gauges.svv.setTarget(svvShown);
-  gauges.svri.setTarget(p.svri + 20*noise());
-  gauges.scv.setTarget(p.scv + 1.0*noise());
+  // Targets con ruido mínimo (para “monitor real”)
+  gauges.ci.setTarget(p.ci + 0.03*randn());
+  gauges.svv.setTarget(svvShown + 0.6*randn());
+  gauges.svri.setTarget(p.svri + 18*randn());
+  gauges.scv.setTarget(p.scv + 0.8*randn());
 
   // historia para trend
   gauges.ci.pushHistory(p.ci);
@@ -995,29 +1021,45 @@ function physioStep(){
   gauges.svri.pushHistory(p.svri);
   gauges.scv.pushHistory(p.scv);
 
-  // badge SVV
   gauges.svv.valid = patient.svvValid;
   UI.badge_svv.textContent = patient.svvValid ? "SVV válido" : "SVV no confiable";
 
-  // debug
   UI.debugTiny.textContent =
-    `FC ~ ${Math.round(p.fc)} bpm  | VS ~ ${Math.round(p.vs)} mL  | CO ~ ${p.co.toFixed(1)} L/min  | MAP ~ ${Math.round(p.map)} mmHg`;
+    `FC ${Math.round(p.fc)} bpm | SV ${Math.round(p.sv)} mL | CO ${p.co.toFixed(1)} L/min | MAP ${Math.round(p.map)} mmHg | DO₂ ${Math.round(p.DO2)} | VO₂ ${Math.round(p.VO2)}`;
 }
 
 /** =========================
- * LOOP RENDER
+ * RENDER LOOP (continuo)
  * ========================== */
+function trendText(tr){
+  const arrow = tr.dir>0 ? "↑" : (tr.dir<0 ? "↓" : "→");
+  const pct = Math.abs(tr.pct);
+  const shown = pct < 1 ? pct.toFixed(1) : pct.toFixed(0);
+  return `${arrow} ${shown}% (5 min)`;
+}
+
+function worstZone(zs){
+  if(zs.includes("danger")) return "danger";
+  if(zs.includes("warn")) return "warn";
+  return "ok";
+}
+
+function setAlarm(key){
+  UI.alarm.className = "alarm " + key;
+  UI.alarm.textContent = key === "ok" ? "OK" : (key === "warn" ? "ATENCIÓN" : "ALARMA");
+}
+
 function renderLoop(now){
   const dt = (now - lastRender)/1000;
   lastRender = now;
 
-  // step gauges
+  // step diales
   gauges.ci.step(dt);
   gauges.svv.step(dt);
   gauges.svri.step(dt);
   gauges.scv.step(dt);
 
-  // update text
+  // update texto
   const ci = gauges.ci.value;
   const svv= gauges.svv.value;
   const svri=gauges.svri.value;
@@ -1028,43 +1070,22 @@ function renderLoop(now){
   UI.v_svri.textContent = fmt.svri(svri);
   UI.v_scv.textContent  = fmt.scv(scv);
 
-  // trends
-  const tr_ci = gauges.ci.trend5min();
-  const tr_svv = gauges.svv.trend5min();
-  const tr_svri = gauges.svri.trend5min();
-  const tr_scv = gauges.scv.trend5min();
+  // trends (fix #2)
+  UI.t_ci.textContent   = trendText(gauges.ci.trend());
+  UI.t_svv.textContent  = trendText(gauges.svv.trend());
+  UI.t_svri.textContent = trendText(gauges.svri.trend());
+  UI.t_scv.textContent  = trendText(gauges.scv.trend());
 
-  UI.t_ci.textContent   = trendText(tr_ci);
-  UI.t_svv.textContent  = trendText(tr_svv);
-  UI.t_svri.textContent = trendText(tr_svri);
-  UI.t_scv.textContent  = trendText(tr_scv);
-
-  // alarm summary
-  const z1 = gauges.ci.zoneFor(ci);
-  const z2 = gauges.svv.zoneFor(svv);
-  const z3 = gauges.svri.zoneFor(svri);
-  const z4 = gauges.scv.zoneFor(scv);
-  const worst = worstZone([z1,z2,z3,z4]);
+  // alarma global
+  const worst = worstZone([
+    gauges.ci.zoneFor(ci),
+    gauges.svv.zoneFor(svv),
+    gauges.svri.zoneFor(svri),
+    gauges.scv.zoneFor(scv)
+  ]);
   setAlarm(worst);
 
-  if(running) requestAnimationFrame(renderLoop);
-}
-
-function trendText(tr){
-  const arrow = tr.dir>0 ? "↑" : (tr.dir<0 ? "↓" : "→");
-  const pct = Math.abs(tr.pct);
-  if(pct < 0.6) return `${arrow} 0% (5 min)`;
-  return `${arrow} ${pct.toFixed(0)}% (5 min)`;
-}
-function worstZone(zs){
-  // danger > warn > ok
-  if(zs.includes("danger")) return "danger";
-  if(zs.includes("warn")) return "warn";
-  return "ok";
-}
-function setAlarm(key){
-  UI.alarm.className = "alarm " + key;
-  UI.alarm.textContent = key === "ok" ? "OK" : (key === "warn" ? "ATENCIÓN" : "ALARMA");
+  requestAnimationFrame(renderLoop);
 }
 
 /** =========================
@@ -1075,11 +1096,11 @@ UI.btnPlay.addEventListener("click", ()=>{
   UI.btnPlay.textContent = running ? "⏸ Pause" : "▶︎ Play";
 
   if(running){
-    lastRender = performance.now();
-    if(!physioTimer) physioTimer = setInterval(physioStep, 1000/CONFIG.PHYSIO_HZ);
-    requestAnimationFrame(renderLoop);
+    if(!physioTimer) physioTimer = setInterval(()=>physioStep(false), 1000/CONFIG.PHYSIO_HZ);
+    UI.status.textContent = currentScenario?.meta || "Simulación en curso…";
   }else{
     if(physioTimer){ clearInterval(physioTimer); physioTimer = null; }
+    UI.status.textContent = "Pausado (podés probar intervenciones igualmente).";
   }
 });
 
@@ -1087,26 +1108,25 @@ UI.btnReset.addEventListener("click", async ()=>{
   const id = UI.scenarioSelect.value;
   const sc = await loadScenarioById(id);
   applyScenario(sc);
-  // fuerza un update visible
-  physioStep();
+  physioStep(true);
 });
 
 UI.scenarioSelect.addEventListener("change", async ()=>{
   const id = UI.scenarioSelect.value;
   const sc = await loadScenarioById(id);
   applyScenario(sc);
-  physioStep();
+  physioStep(true);
 });
 
-// Panel test
+// Footer buttons
 document.getElementById("bolus250").onclick = ()=> bolus(250);
 document.getElementById("bolus500").onclick = ()=> bolus(500);
-document.getElementById("noraUp").onclick = ()=> nora(+0.25);
+document.getElementById("noraUp").onclick   = ()=> nora(+0.25);
 document.getElementById("noraDown").onclick = ()=> nora(-0.25);
-document.getElementById("inoUp").onclick = ()=> ino(+0.25);
-document.getElementById("inoDown").onclick = ()=> ino(-0.25);
-document.getElementById("tx").onclick = ()=> transfusion();
-document.getElementById("toggleSVV").onclick = ()=> toggleSVVValid();
+document.getElementById("inoUp").onclick    = ()=> ino(+0.25);
+document.getElementById("inoDown").onclick  = ()=> ino(-0.25);
+document.getElementById("tx").onclick       = ()=> transfusion();
+document.getElementById("toggleSVV").onclick= ()=> toggleSVVValid();
 
 /** =========================
  * INIT
@@ -1119,13 +1139,14 @@ document.getElementById("toggleSVV").onclick = ()=> toggleSVVValid();
   const sc = await loadScenarioById(firstId);
   applyScenario(sc);
 
-  // primer frame
-  physioStep();
-  // arranca pausado (vos le das play)
-  lastRender = performance.now();
-  gauges.ci.draw(); gauges.svv.draw(); gauges.svri.draw(); gauges.scv.draw();
+  // primer estado visible
+  physioStep(true);
 
-  UI.status.textContent = (currentScenario?.meta) || "Listo. Elegí escenario y dale Play.";
+  // render siempre corriendo (fix #2)
+  lastRender = performance.now();
+  requestAnimationFrame(renderLoop);
+
+  UI.status.textContent = currentScenario?.meta || "Listo. Elegí escenario y dale Play.";
 })();
 </script>
 </body>
